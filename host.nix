@@ -24,7 +24,7 @@ let
           type = lib.mkOptionType {
             name = "Toplevel NixOS config";
             merge =
-              loc: defs:
+              _loc: defs:
               (import "${toString pkgs.path}/nixos/lib/eval-config.nix" {
                 modules = [
                   {
@@ -139,7 +139,7 @@ in
     );
 
     systemd.nspawn = lib.flip lib.mapAttrs cfg.containers (
-      name: containerCfg: {
+      _name: containerCfg: {
         execConfig = {
           Ephemeral = true;
           # We're running our own init from the system path.

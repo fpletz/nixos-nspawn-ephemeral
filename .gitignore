@@ -1,2 +1,4 @@
 result*
 .direnv/
+.pre-commit-config.yaml
+.nixos-test-history
