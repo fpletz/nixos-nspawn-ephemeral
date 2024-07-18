@@ -15,7 +15,7 @@ and using the regular imperative NixOS deployment options instead.
 * first-class integration into `machinectl`
   * `-M` flag for `systemctl` and `loginctl` works as intended
   * uses systemd's `systemd-nspawn@.service` unit
-* automatic network configuration using upstream `systemd-networkd` functionality
+* automatic network configuration using `systemd-networkd`
 * user namespaces with dynamic UID/GID allocation
 * ephemeral execution so no state is being kept across restarts
   * if state is needed, bind mounts can be defined in the nspawn configuration

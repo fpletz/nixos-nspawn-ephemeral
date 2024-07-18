@@ -30,6 +30,27 @@ let
                   {
                     networking.hostName = lib.mkDefault name;
                     nixpkgs.hostPlatform = lib.mkDefault pkgs.system;
+
+                    systemd.network.networks."10-container-host0" = lib.mkIf (config.container.network != null) (
+                      lib.mkMerge [
+                        {
+                          matchConfig = {
+                            Kind = "veth";
+                            Name = "host0";
+                            Virtualization = "container";
+                          };
+                          networkConfig = {
+                            DHCP = true;
+                            LinkLocalAddressing = false;
+                            LLDP = true;
+                            EmitLLDP = "customer-bridge";
+                            IPv6DuplicateAddressDetection = 0;
+                            IPv6AcceptRA = false;
+                          };
+                        }
+                        config.container.network
+                      ]
+                    );
                   }
                   ./container.nix
                 ] ++ (map (x: x.value) defs);
@@ -51,6 +72,22 @@ let
             the evaluated NixOS system configuration, typically a
             symlink to a system profile.
           '';
+        };
+
+        host.network = lib.mkOption {
+          type = lib.types.nullOr lib.types.attrs;
+          description = ''
+            Networkd network config merged with systemd.network.networks.
+          '';
+          default = null;
+        };
+
+        container.network = lib.mkOption {
+          type = lib.types.nullOr lib.types.attrs;
+          description = ''
+            Networkd network config merged with systemd.network.networks.
+          '';
+          default = null;
         };
       };
 
@@ -75,6 +112,31 @@ in
         allowedUDPPorts = [ 67 ];
       };
     };
+
+    systemd.network.networks = lib.flip lib.mapAttrs' cfg.containers (
+      name: containerCfg:
+      lib.nameValuePair "10-ve-${name}" (
+        lib.mkIf (containerCfg.host.network != null) (
+          lib.mkMerge [
+            {
+              matchConfig = {
+                Kind = "veth";
+                Name = "ve-${name}";
+              };
+              networkConfig = {
+                LinkLocalAddressing = false;
+                LLDP = true;
+                EmitLLDP = "customer-bridge";
+                IPv6DuplicateAddressDetection = 0;
+                IPv6AcceptRA = false;
+                IPMasquerade = "both";
+              };
+            }
+            containerCfg.host.network
+          ]
+        )
+      )
+    );
 
     systemd.nspawn = lib.flip lib.mapAttrs cfg.containers (
       name: containerCfg: {
