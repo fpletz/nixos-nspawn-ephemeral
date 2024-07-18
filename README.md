@@ -13,8 +13,9 @@ and using the regular imperative NixOS deployment options instead.
 ## Highlights
 
 * first-class integration into `machinectl`
-* `-M` flag for `systemctl` and `loginctl` works as intended
+  * `-M` flag for `systemctl` and `loginctl` works as intended
 * automatic network configuration using upstream `systemd-networkd` functionality
+* user namespaces with dynamic UID/GID allocation
 * ephemeral execution so no state is being kept across restarts
   * if state is needed, bind mounts can be defined in the nspawn configuration
 
@@ -22,7 +23,6 @@ and using the regular imperative NixOS deployment options instead.
 
 * NixOS option interface is currently very simple
   * needs more options like custom network config and bind mounts
-* confirm that user namespaces are working as intended
 * the whole host nix store is being bind mounted into the container
   * explore if only needed store paths could be bind mounted instead
   * maybe create an option to make a separate nix daemon instance available in the container

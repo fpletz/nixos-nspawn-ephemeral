@@ -27,7 +27,7 @@
         };
 
         custom-path-eval = pkgs.nixosTest {
-          name = "simple-container";
+          name = "custom-path-eval";
           nodes.host =
             { ... }:
             {
