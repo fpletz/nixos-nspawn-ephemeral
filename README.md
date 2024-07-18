@@ -7,13 +7,14 @@ containers.
 Imperative containers are not in scope of this project since it is the author's opinion that those
 are the main issue holding back the upstream NixOS container migration to proper systemd-nspawn
 support. Imperative containers need a separate state outside of the NixOS module system and
-therefore a tool to manage that state. The author suggests importing the offical container tarball
+therefore a tool to manage that state. The author suggests importing the official container tarball
 and using the regular imperative NixOS deployment options instead.
 
 ## Highlights
 
 * first-class integration into `machinectl`
   * `-M` flag for `systemctl` and `loginctl` works as intended
+  * uses systemd's `systemd-nspawn@.service` unit
 * automatic network configuration using upstream `systemd-networkd` functionality
 * user namespaces with dynamic UID/GID allocation
 * ephemeral execution so no state is being kept across restarts
@@ -26,6 +27,7 @@ and using the regular imperative NixOS deployment options instead.
 * the whole host nix store is being bind mounted into the container
   * explore if only needed store paths could be bind mounted instead
   * maybe create an option to make a separate nix daemon instance available in the container
+* explore how to pass credentials into the container and provide an interface
 
 ## How to use this
 
