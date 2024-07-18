@@ -30,4 +30,5 @@ and using the regular imperative NixOS deployment options instead.
 ## How to use this
 
 You can consume this flake and use the provided NixOS modules. See the `simple-container` check
-in `checks.nix` for an example.
+in `checks.nix` for an example. If you are not using flakes, the NixOS modules are located in
+`host.nix` and `container.nix`.
