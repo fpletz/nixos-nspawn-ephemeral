@@ -67,7 +67,7 @@ in
     };
   };
 
-  config = {
+  config = lib.mkIf (lib.length (lib.attrNames cfg.containers) > 0) {
     networking = {
       useNetworkd = true;
       firewall.interfaces."ve-+" = {
