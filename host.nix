@@ -197,6 +197,8 @@ in
           PrivateUsers = "pick";
           # Place the journal on the host to make it persistent
           LinkJournal = "try-host";
+          # NixOS takes care of the timezone
+          Timezone = "off";
         };
         filesConfig = {
           # This chowns the directory /var/lib/machines/${name} to ensure that
