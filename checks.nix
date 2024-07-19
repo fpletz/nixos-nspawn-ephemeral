@@ -69,22 +69,24 @@ in
             virtualisation.nixos-nspawn-ephemeral.containers = {
               test = {
                 config = { };
-                host.network = {
-                  networkConfig.Address = [
-                    "fc42::1/64"
-                    "192.168.42.1/24"
-                  ];
-                };
-                container.network = {
-                  networkConfig = {
-                    Address = [
-                      "fc42::2/64"
-                      "192.168.42.2/24"
+                network.veth.config = {
+                  host = {
+                    networkConfig.Address = [
+                      "fc42::1/64"
+                      "192.168.42.1/24"
                     ];
-                    Gateway = [
-                      "fc42::1"
-                      "192.168.42.1"
-                    ];
+                  };
+                  container = {
+                    networkConfig = {
+                      Address = [
+                        "fc42::2/64"
+                        "192.168.42.2/24"
+                      ];
+                      Gateway = [
+                        "fc42::1"
+                        "192.168.42.1"
+                      ];
+                    };
                   };
                 };
               };

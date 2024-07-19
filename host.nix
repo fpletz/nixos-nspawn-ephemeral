@@ -31,26 +31,27 @@ let
                     networking.hostName = lib.mkDefault name;
                     nixpkgs.hostPlatform = lib.mkDefault pkgs.system;
 
-                    systemd.network.networks."10-container-host0" = lib.mkIf (config.container.network != null) (
-                      lib.mkMerge [
-                        {
-                          matchConfig = {
-                            Kind = "veth";
-                            Name = "host0";
-                            Virtualization = "container";
-                          };
-                          networkConfig = {
-                            DHCP = true;
-                            LinkLocalAddressing = false;
-                            LLDP = true;
-                            EmitLLDP = "customer-bridge";
-                            IPv6DuplicateAddressDetection = 0;
-                            IPv6AcceptRA = false;
-                          };
-                        }
-                        config.container.network
-                      ]
-                    );
+                    systemd.network.networks."10-container-host0" =
+                      lib.mkIf (config.network.veth.enable -> config.network.veth.config.container != null)
+                        (
+                          lib.mkMerge [
+                            {
+                              matchConfig = {
+                                Kind = "veth";
+                                Name = "host0";
+                                Virtualization = "container";
+                              };
+                              networkConfig = {
+                                LinkLocalAddressing = lib.mkDefault false;
+                                LLDP = true;
+                                EmitLLDP = "customer-bridge";
+                                IPv6DuplicateAddressDetection = lib.mkDefault 0;
+                                IPv6AcceptRA = lib.mkDefault false;
+                              };
+                            }
+                            config.network.veth.config.container
+                          ]
+                        );
                   }
                   ./container.nix
                 ] ++ (map (x: x.value) defs);
@@ -74,20 +75,32 @@ let
           '';
         };
 
-        host.network = lib.mkOption {
-          type = lib.types.nullOr lib.types.attrs;
-          description = ''
-            Networkd network config merged with systemd.network.networks.
-          '';
-          default = null;
-        };
+        network.veth = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = ''
+              Enable default veth link between host and container.
+            '';
+          };
 
-        container.network = lib.mkOption {
-          type = lib.types.nullOr lib.types.attrs;
-          description = ''
-            Networkd network config merged with systemd.network.networks.
-          '';
-          default = null;
+          config.host = lib.mkOption {
+            type = lib.types.nullOr lib.types.attrs;
+            description = ''
+              Networkd network config merged with the systemd.network.networks unit on the host side.
+              Matching is already taken care of.
+            '';
+            default = null;
+          };
+
+          config.container = lib.mkOption {
+            type = lib.types.nullOr lib.types.attrs;
+            description = ''
+              Networkd network config merged with the systemd.network.networks unit on the container side.
+              Matching is already taken care of.
+            '';
+            default = null;
+          };
         };
       };
 
@@ -116,7 +129,7 @@ in
     systemd.network.networks = lib.flip lib.mapAttrs' cfg.containers (
       name: containerCfg:
       lib.nameValuePair "10-ve-${name}" (
-        lib.mkIf (containerCfg.host.network != null) (
+        lib.mkIf (containerCfg.network.veth.enable -> containerCfg.network.veth.config.host != null) (
           lib.mkMerge [
             {
               matchConfig = {
@@ -124,15 +137,14 @@ in
                 Name = "ve-${name}";
               };
               networkConfig = {
-                LinkLocalAddressing = false;
+                LinkLocalAddressing = lib.mkDefault false;
                 LLDP = true;
                 EmitLLDP = "customer-bridge";
-                IPv6DuplicateAddressDetection = 0;
-                IPv6AcceptRA = false;
-                IPMasquerade = "both";
+                IPv6DuplicateAddressDetection = lib.mkDefault 0;
+                IPv6AcceptRA = lib.mkDefault false;
               };
             }
-            containerCfg.host.network
+            containerCfg.network.veth.config.host
           ]
         )
       )
@@ -161,7 +173,7 @@ in
         networkConfig = {
           # XXX: Do want want to support host networking?
           Private = true;
-          VirtualEthernet = true;
+          VirtualEthernet = containerCfg.network.veth.enable;
         };
       }
     );
