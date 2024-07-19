@@ -1,9 +1,17 @@
 { inputs, ... }:
 let
   testModule =
-    { pkgs, ... }:
+    { pkgs, config, ... }:
     {
+      # silence warning
+      system.stateVersion = config.system.nixos.release;
+      # debugging in interactive driver
       environment.systemPackages = [ pkgs.tcpdump ];
+      # use this test module in the containers recursively
+      virtualisation.nixos-nspawn-ephemeral.imports = [
+        testModule
+        inputs.self.nixosModules.host
+      ];
     };
 in
 {

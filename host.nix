@@ -32,35 +32,41 @@ let
             merge =
               _loc: defs:
               (import "${toString pkgs.path}/nixos/lib/eval-config.nix" {
-                modules = [
-                  {
-                    networking.hostName = lib.mkDefault name;
-                    nixpkgs.hostPlatform = lib.mkDefault pkgs.system;
+                modules =
+                  let
+                    containerDefaults = {
+                      networking.hostName = lib.mkDefault name;
+                      nixpkgs.hostPlatform = lib.mkDefault pkgs.system;
 
-                    systemd.network.networks."10-container-host0" =
-                      lib.mkIf (config.network.veth.enable -> config.network.veth.config.container != null)
-                        (
-                          lib.mkMerge [
-                            {
-                              matchConfig = {
-                                Kind = "veth";
-                                Name = "host0";
-                                Virtualization = "container";
-                              };
-                              networkConfig = {
-                                LinkLocalAddressing = lib.mkDefault false;
-                                LLDP = true;
-                                EmitLLDP = "customer-bridge";
-                                IPv6DuplicateAddressDetection = lib.mkDefault 0;
-                                IPv6AcceptRA = lib.mkDefault false;
-                              };
-                            }
-                            config.network.veth.config.container
-                          ]
-                        );
-                  }
-                  ./container.nix
-                ] ++ (map (x: x.value) defs);
+                      systemd.network.networks."10-container-host0" =
+                        lib.mkIf (config.network.veth.enable -> config.network.veth.config.container != null)
+                          (
+                            lib.mkMerge [
+                              {
+                                matchConfig = {
+                                  Kind = "veth";
+                                  Name = "host0";
+                                  Virtualization = "container";
+                                };
+                                networkConfig = {
+                                  LinkLocalAddressing = lib.mkDefault false;
+                                  LLDP = true;
+                                  EmitLLDP = "customer-bridge";
+                                  IPv6DuplicateAddressDetection = lib.mkDefault 0;
+                                  IPv6AcceptRA = lib.mkDefault false;
+                                };
+                              }
+                              config.network.veth.config.container
+                            ]
+                          );
+                    };
+                  in
+                  [
+                    containerDefaults
+                    ./container.nix
+                  ]
+                  ++ cfg.imports
+                  ++ (map (x: x.value) defs);
                 prefix = [
                   "containers"
                   name
@@ -148,6 +154,20 @@ in
           }'';
         description = ''
           Attribute set of containers that are configured by this module.
+        '';
+      };
+
+      imports = lib.mkOption {
+        type = lib.types.listOf lib.types.deferredModule;
+        default = [ ];
+        example = lib.literalExpression ''
+          [
+            { services.getty.helpLine = "Hello world! I'm a nspawn container!"; }
+            inputs.lix-module.nixosModules.default
+          ]'';
+        description = ''
+          List of NixOS modules to be imported in every system evaluation when
+          {option}`containers.*.config` is being used.
         '';
       };
     };
