@@ -21,6 +21,12 @@ let
             A specification of the desired configuration of this
             container, as a NixOS module.
           '';
+          example = lib.literalExpression ''
+            { pkgs, ... }: {
+              networking.hostName = "foobar";
+              services.openssh.enable = true;
+              environment.systemPackages = [ pkgs.htop ];
+            }'';
           type = lib.mkOptionType {
             name = "Toplevel NixOS config";
             merge =
@@ -66,7 +72,7 @@ let
 
         path = lib.mkOption {
           type = lib.types.path;
-          example = "/nix/var/nix/profiles/per-container/webserver";
+          example = "/nix/var/nix/profiles/my-container";
           description = ''
             As an alternative to specifying
             {option}`config`, you can specify the path to
@@ -79,6 +85,7 @@ let
           enable = lib.mkOption {
             type = lib.types.bool;
             default = true;
+            example = false;
             description = ''
               Enable default veth link between host and container.
             '';
@@ -87,19 +94,33 @@ let
           config.host = lib.mkOption {
             type = lib.types.nullOr lib.types.attrs;
             description = ''
-              Networkd network config merged with the systemd.network.networks unit on the host side.
-              Matching is already taken care of.
+              Networkd network config merged with the systemd.network.networks
+              unit on the **host** side. Interface match config is already
+              prepopulated.
             '';
             default = null;
+            example = {
+              networkConfig.Address = [
+                "fd42::1/64"
+                "10.23.42.1/28"
+              ];
+            };
           };
 
           config.container = lib.mkOption {
             type = lib.types.nullOr lib.types.attrs;
             description = ''
-              Networkd network config merged with the systemd.network.networks unit on the container side.
-              Matching is already taken care of.
+              Networkd network config merged with the systemd.network.networks unit
+              on the **container** side. Interface match config is already
+              prepopulated.
             '';
             default = null;
+            example = {
+              networkConfig.Address = [
+                "fd42::2/64"
+                "10.23.42.2/28"
+              ];
+            };
           };
         };
       };
@@ -113,7 +134,22 @@ in
 {
   options = {
     virtualisation.nixos-nspawn-ephemeral = {
-      containers = lib.mkOption { type = lib.types.attrsOf containerModule; };
+      containers = lib.mkOption {
+        type = lib.types.attrsOf containerModule;
+        default = { };
+        example = lib.literalExpression ''
+          {
+            webserver = {
+              config = {
+                networking.firewall.allowedTCPPorts = [ 80 ];
+                services.nginx.enable = true;
+              };
+            };
+          }'';
+        description = ''
+          Attribute set of containers that are configured by this module.
+        '';
+      };
     };
   };
 

@@ -1,0 +1,6 @@
+[book]
+authors = ["Franz Pletz"]
+language = "en"
+multilingual = false
+src = "src"
+title = "nixos-nspawn-ephemeral"

@@ -40,8 +40,48 @@
       };
 
       perSystem =
-        { pkgs, config, ... }:
         {
+          pkgs,
+          config,
+          lib,
+          ...
+        }:
+        {
+          packages.docs =
+            let
+              optionsMd =
+                (pkgs.nixosOptionsDoc {
+                  inherit
+                    (inputs.nixpkgs.lib.nixosSystem {
+                      inherit (pkgs) system;
+                      modules = [ inputs.self.nixosModules.host ];
+                    })
+                    options
+                    ;
+                  documentType = "none";
+                  transformOptions =
+                    opt:
+                    if lib.hasPrefix "virtualisation.nixos-nspawn-ephemeral" opt.name then
+                      opt // { declarations = [ ]; }
+                    else
+                      { visible = false; };
+                }).optionsCommonMark;
+            in
+            pkgs.stdenv.mkDerivation {
+              name = "nixos-nspawn-ephemeral-docs";
+
+              src = inputs.self;
+
+              nativeBuildInputs = [ pkgs.mdbook ];
+
+              buildPhase = ''
+                cd docs
+                cp ../README.md src/README.md
+                ln -sf ${optionsMd} src/options.md
+                mdbook build -d $out
+              '';
+            };
+
           formatter = pkgs.nixfmt-rfc-style;
 
           devShells.default = pkgs.mkShellNoCC {
