@@ -226,7 +226,11 @@ in
           # empty the operation is fast and only happens on first boot.
           PrivateUsersOwnership = "chown";
           # The nix store must be available in the container to run binaries
-          BindReadOnly = "/nix/store";
+          # FIXME: This should be mounted with an idmap so the nix store is
+          # owned by root. Setting an idmap fails for some reason, though.
+          # Due to this, logrotate currently fails because it requires
+          # configuration files to be owned by root. See container.nix.
+          BindReadOnly = [ "/nix/store:/nix/store:noidmap" ];
         };
         networkConfig = {
           # XXX: Do want want to support host networking?
@@ -237,9 +241,9 @@ in
     );
 
     systemd.services."systemd-nspawn@" = {
-      # We this dummy image directory because systemd-nspawn fails otherwise and it persists
-      # the UID/GID mapping for user namespaces.
-      serviceConfig.ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p /var/lib/machines/%i";
+      # We create this dummy image directory because systemd-nspawn fails otherwise.
+      # Additionally, it persists the UID/GID mapping for user namespaces.
+      serviceConfig.ExecStartPre = [ "${pkgs.coreutils}/bin/mkdir -p /var/lib/machines/%i" ];
     };
 
     # Activate the container units with machines.target
