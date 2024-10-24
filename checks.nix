@@ -55,7 +55,14 @@ in
                   inherit (pkgs) system;
                   modules = [
                     inputs.self.nixosModules.container
-                    { networking.hostName = "test-container"; }
+                    (
+                      { config, ... }:
+                      {
+                        networking.hostName = "test-container";
+                        # silence warning
+                        system.stateVersion = config.system.nixos.release;
+                      }
+                    )
                   ];
                 }).config.system.build.toplevel;
             };
