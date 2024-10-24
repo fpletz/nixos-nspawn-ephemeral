@@ -23,7 +23,7 @@ jobs:
         id: pages
         uses: actions/configure-pages@v5
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v12
+        uses: DeterminateSystems/nix-installer-action@v14
       - uses: DeterminateSystems/magic-nix-cache-action@v8
       - name: Build
         run: nix build .#docs
