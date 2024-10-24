@@ -22,8 +22,6 @@ and using the regular imperative NixOS deployment options instead.
 
 ## TODO
 
-* NixOS option interface is currently very simple
-  * needs more options like custom network config and bind mounts
 * the whole host nix store is being bind mounted into the container
   * explore if only needed store paths could be bind mounted instead
   * maybe create an option to make a separate nix daemon instance available in the container
@@ -34,3 +32,82 @@ and using the regular imperative NixOS deployment options instead.
 You can consume this flake and use the provided NixOS modules. See the `simple-container` check
 in `checks.nix` for an example. If you are not using flakes, the NixOS modules are located in
 `host.nix` and `container.nix`.
+
+### Examples
+
+Simple container called `mycontainer` running plain NixOS:
+
+```nix
+{
+  # import the module on the host
+  imports = [
+    # with flakes
+    inputs.nixos-nspawn-ephemeral.nixosModules.host
+    # OR
+    # without flakes
+    "${builtins.fetchTarball "https://github.com/fpletz/nixos-nspawn-ephemeral/archive/main.tar.gz"}/host.nix"
+  ];
+
+  virtualisation.nixos-nspawn-ephemeral.containers = {
+    mycontainer = { };
+  };
+}
+```
+
+The following NixOS configuration creates a container host with an nginx configured to reverse proxy
+to a container named `backend` with another nginx instance.
+
+```nix
+{
+  services.nginx = {
+    enable = true;
+    recommendedProxySettings = true;
+    virtualHosts."default".locations."/".proxyPass = "http://backend";
+  };
+
+  virtualisation.nixos-nspawn-ephemeral.containers = {
+    backend = {
+      config = {
+        networking.firewall.allowedTCPPorts = [ 80 ];
+        services.nginx = {
+          enable = true;
+          virtualHosts."backend".locations."/".return = ''200 "hack the planet"'';
+        };
+      };
+    };
+  };
+}
+```
+
+Static network configuration is also possible:
+
+```nix
+{
+  virtualisation.nixos-nspawn-ephemeral.containers = {
+    testcontainer = {
+      config = { };
+      network.veth.config = {
+        # networkd network unit configs for host and container side
+        host = {
+          networkConfig.Address = [
+            "fc42::1/64"
+            "192.168.42.1/24"
+          ];
+        };
+        container = {
+          networkConfig = {
+            Address = [
+              "fc42::2/64"
+              "192.168.42.2/24"
+            ];
+            Gateway = [
+              "fc42::1"
+              "192.168.42.1"
+            ];
+          };
+        };
+      };
+    };
+  };
+}
+```
