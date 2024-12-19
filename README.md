@@ -19,27 +19,24 @@ nixpkgs at some point.
 * Run multiple instances of a NixOS service on the same machine
 * Provide more isolation by default than the systemd service hardening options between services on the same machine
 
-## How?
+## How it works
 
 The project provides a NixOS module for a host machine that create nspawn units and uses
 systemd's `systemd-nspawn@` service to launch the containers. Only the nix store is bind
 mounted into the container and the nix daemon from the host is not passed into the container. 
 User namespaces with dynamic UID/GID allocation are enabled by default.
 
-A veth link from the host network namespace to the containers namespace is created that uses
-networkds automatic configuration provided 
+### Networking
 
-## Operation
+By default, a veth link is created between the host and the container and set up with networkd's
+default DHCP-based configuration. Additionally, LinkLocalAddressing and MDNS are enabled by default.
+The networkd network units can be overridden easily to configure custom networking instead.
+
+### Operation
 
 Most `machinectl` commands can be used to manage these declarative containers like `start`,
 `stop`,`shell` and other commands not involving images work as expected. Using the `-M`
 flags tools like `systemctl` or `journalctl` can access containers from the host.
-
-## Networking
-
-By default, a veth link is created between the host and the container and set up with networkd's
-default DHCP-based configuration. Additionally, LinkLocalAddressing and MDNS are enabled by default.
-The networkd network units can be overridden easily to configure static networking instead.
 
 ## Open Issues
 
@@ -54,9 +51,9 @@ You can consume this flake and use the provided NixOS modules. See the `simple-c
 in `checks.nix` for an example. If you are not using flakes, the NixOS modules are located in
 `host.nix` and `container.nix`.
 
-### Examples
+### Example: Simple Container
 
-Simple container called `mycontainer` running plain NixOS:
+Simple container called `mycontainer` running a plain NixOS instance with `htop` installed:
 
 ```nix
 # NixOS configuration of host machine
@@ -71,10 +68,16 @@ Simple container called `mycontainer` running plain NixOS:
   ];
 
   nixos-nspawn.containers = {
-    mycontainer = { };
+    mycontainer.config = { pkgs,... }: {
+      environment.systemPackages = [ pkgs.htop ];
+    };
   };
 }
 ```
+
+You can use `machinectl shell mycontainer` to access a root shell in the container and run `htop`.
+
+### Example: Reverse Proxy on the host for container
 
 The following NixOS configuration creates a container host with an nginx configured to reverse proxy
 to a container named `backend` with another nginx instance.
@@ -85,7 +88,7 @@ to a container named `backend` with another nginx instance.
   services.nginx = {
     enable = true;
     recommendedProxySettings = true;
-    virtualHosts."default".locations."/".proxyPass = "http://backend";
+    virtualHosts."_".locations."/".proxyPass = "http://backend";
   };
 
   nixos-nspawn.containers = {
@@ -101,6 +104,8 @@ to a container named `backend` with another nginx instance.
   };
 }
 ```
+
+### Example: Custom network configuration
 
 Static network configuration is also possible:
 
