@@ -3,21 +3,25 @@
 This is a work in progress proof of concept for a simple alternative to NixOS containers
 with an opinionated minimal feature set.
 
-The goal is to provide a minimal layer around systemd's existing nspawn facilities
+The idea is to provide a minimal layer around systemd's existing nspawn facilities
 and simple networking using networkd on both sides. In contrast to standard NixOS containers,
 the containers are by design ephemeral. No state is being kept across restarts. Directories
 can be bind mounted into the container if state is explicitly needed.
 
-Imperative containers are not in scope of this project for now.
+Imperative containers are not in scope of this project for now. At some point, a `nixos-nspawn`
+executable could be added that does only supports networkd based default networking. This would
+provide a simple way to spin up containers imperatively and keep things simple without the need
+to retain any configuration state.
 
-The idea is to upstream this either as a new module or a replacement for NixOS containers in
-nixpkgs at some point.
+The goal is to upstream this to nixpkgs at some point. Either as a new module or a replacement
+for NixOS containers.
 
 ## Use cases
 
 * Run services in different network namespaces for custom routing
 * Run multiple instances of a NixOS service on the same machine
 * Provide more isolation by default than the systemd service hardening options between services on the same machine
+* To accelerate NixOS VM tests that don't need multiple virtual machines to mock multiple nodes
 
 ## How it works
 
@@ -29,14 +33,14 @@ User namespaces with dynamic UID/GID allocation are enabled by default.
 ### Networking
 
 By default, a veth link is created between the host and the container and set up with networkd's
-default DHCP-based configuration. Additionally, LinkLocalAddressing and MDNS are enabled by default.
+default DHCP-based configuration. Additionally, `LinkLocalAddressing` and `MDNS` is enabled by default.
 The networkd network units can be overridden easily to configure custom networking instead.
 
 ### Operation
 
 Most `machinectl` commands can be used to manage these declarative containers like `start`,
 `stop`,`shell` and other commands not involving images work as expected. Using the `-M`
-flags tools like `systemctl` or `journalctl` can access containers from the host.
+flag tools like `systemctl` or `journalctl` can access containers from the host.
 
 ## Open Issues
 
