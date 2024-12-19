@@ -86,13 +86,17 @@ in
                 config = { };
                 network.veth.config = {
                   host = {
-                    networkConfig.Address = [
-                      "fc42::1/64"
-                      "192.168.42.1/24"
-                    ];
+                    networkConfig = {
+                      DHCPServer = false;
+                      Address = [
+                        "fc42::1/64"
+                        "192.168.42.1/24"
+                      ];
+                    };
                   };
                   container = {
                     networkConfig = {
+                      DHCP = false;
                       Address = [
                         "fc42::2/64"
                         "192.168.42.2/24"

@@ -7,6 +7,45 @@
 let
   cfg = config.virtualisation.nixos-nspawn-ephemeral;
 
+  containerVdevNetwork = {
+    matchConfig = {
+      Kind = "veth";
+      Name = "host0";
+      Virtualization = "container";
+    };
+    networkConfig = {
+      DHCP = lib.mkDefault true;
+      LinkLocalAddressing = lib.mkDefault true;
+      LLDP = true;
+      EmitLLDP = "customer-bridge";
+      IPv6DuplicateAddressDetection = lib.mkDefault 0;
+      IPv6AcceptRA = lib.mkDefault true;
+      MulticastDNS = true;
+    };
+  };
+
+  hostVdevNetwork = name: {
+    matchConfig = {
+      Kind = "veth";
+      Name = "ve-${name}";
+    };
+    networkConfig = {
+      Address = lib.mkDefault [
+        "0.0.0.0/30"
+        "::/64"
+      ];
+      DHCPServer = lib.mkDefault true;
+      IPMasquerade = lib.mkDefault "both";
+      LinkLocalAddressing = lib.mkDefault true;
+      LLDP = true;
+      EmitLLDP = "customer-bridge";
+      IPv6DuplicateAddressDetection = lib.mkDefault 0;
+      IPv6AcceptRA = lib.mkDefault false;
+      IPv6SendRA = lib.mkDefault true;
+      MulticastDNS = true;
+    };
+  };
+
   containerModule = lib.types.submodule (
     {
       config,
@@ -42,37 +81,33 @@ let
               _loc: defs:
               (import "${toString pkgs.path}/nixos/lib/eval-config.nix" {
                 modules =
-                  let
-                    containerDefaults = {
+                  [
+                    ./container.nix
+                    {
                       networking.hostName = lib.mkDefault name;
                       nixpkgs.hostPlatform = lib.mkDefault pkgs.system;
 
+                      networking.firewall.interfaces."host0" = {
+                        allowedTCPPorts = [
+                          5353 # MDNS
+                        ];
+                        allowedUDPPorts = [
+                          5353 # MDNS
+                        ];
+                      };
+
                       systemd.network.networks."10-container-host0" =
-                        lib.mkIf (config.network.veth.enable -> config.network.veth.config.container != null)
-                          (
-                            lib.mkMerge [
-                              {
-                                matchConfig = {
-                                  Kind = "veth";
-                                  Name = "host0";
-                                  Virtualization = "container";
-                                };
-                                networkConfig = {
-                                  LinkLocalAddressing = lib.mkDefault false;
-                                  LLDP = true;
-                                  EmitLLDP = "customer-bridge";
-                                  IPv6DuplicateAddressDetection = lib.mkDefault 0;
-                                  IPv6AcceptRA = lib.mkDefault false;
-                                };
-                              }
-                              config.network.veth.config.container
-                            ]
-                          );
-                    };
-                  in
-                  [
-                    containerDefaults
-                    ./container.nix
+                        let
+                          veth = config.network.veth;
+                          customConfig = if veth.config.container != null then veth.config.container else { };
+                        in
+                        lib.mkIf veth.enable (
+                          lib.mkMerge [
+                            containerVdevNetwork
+                            customConfig
+                          ]
+                        );
+                    }
                   ]
                   ++ cfg.imports
                   ++ (map (x: x.value) defs);
@@ -186,30 +221,27 @@ in
     networking = {
       useNetworkd = true;
       firewall.interfaces."ve-+" = {
-        # allow DHCP
-        allowedUDPPorts = [ 67 ];
+        allowedTCPPorts = [
+          5353 # MDNS
+        ];
+        allowedUDPPorts = [
+          67 # DHCP
+          5353 # MDNS
+        ];
       };
     };
 
     systemd.network.networks = lib.flip lib.mapAttrs' cfg.containers (
       name: containerCfg:
       lib.nameValuePair "10-ve-${name}" (
-        lib.mkIf (containerCfg.network.veth.enable -> containerCfg.network.veth.config.host != null) (
+        let
+          veth = containerCfg.network.veth;
+          customConfig = if veth.config.host != null then veth.config.host else { };
+        in
+        lib.mkIf veth.enable (
           lib.mkMerge [
-            {
-              matchConfig = {
-                Kind = "veth";
-                Name = "ve-${name}";
-              };
-              networkConfig = {
-                LinkLocalAddressing = lib.mkDefault false;
-                LLDP = true;
-                EmitLLDP = "customer-bridge";
-                IPv6DuplicateAddressDetection = lib.mkDefault 0;
-                IPv6AcceptRA = lib.mkDefault false;
-              };
-            }
-            containerCfg.network.veth.config.host
+            (hostVdevNetwork name)
+            customConfig
           ]
         )
       )

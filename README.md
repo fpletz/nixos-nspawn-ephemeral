@@ -20,8 +20,9 @@ and using the regular imperative NixOS deployment options instead.
 * ephemeral execution so no state is being kept across restarts
   * if state is needed, bind mounts can be defined in the nspawn configuration
 
-## TODO
+## Open Issues
 
+* proper IPv6 support
 * the whole host nix store is being bind mounted into the container
   * explore if only needed store paths could be bind mounted instead
   * maybe create an option to make a separate nix daemon instance available in the container
