@@ -281,11 +281,11 @@ in
       }
     );
 
-    systemd.services."systemd-nspawn@" = {
-      # We create this dummy image directory because systemd-nspawn fails otherwise.
-      # Additionally, it persists the UID/GID mapping for user namespaces.
-      serviceConfig.ExecStartPre = [ "${pkgs.coreutils}/bin/mkdir -p /var/lib/machines/%i" ];
-    };
+    # We create this dummy image directory because systemd-nspawn fails otherwise.
+    # Additionally, it persists the UID/GID mapping for user namespaces.
+    systemd.tmpfiles.settings."10-nixos-nspawn-ephemeral" = lib.mapAttrs' (
+      name: _: lib.nameValuePair "/var/lib/machines/${name}" { d = { }; }
+    ) cfg.containers;
 
     # Activate the container units with machines.target
     systemd.targets.machines.wants = lib.mapAttrsToList (name: _: "systemd-nspawn@${name}.service") (
