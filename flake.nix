@@ -1,5 +1,5 @@
 {
-  description = "Declarative ephemeral NixOS nspawn containers";
+  description = "Declarative NixOS nspawn containers";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
@@ -61,14 +61,14 @@
                   documentType = "none";
                   transformOptions =
                     opt:
-                    if lib.hasPrefix "virtualisation.nixos-nspawn-ephemeral" opt.name then
+                    if lib.hasPrefix "nixos-nspawn" opt.name then
                       opt // { declarations = [ ]; }
                     else
                       { visible = false; };
                 }).optionsCommonMark;
             in
             pkgs.stdenv.mkDerivation {
-              name = "nixos-nspawn-ephemeral-docs";
+              name = "nixos-nspawn-docs";
 
               src = inputs.self;
 

@@ -3,4 +3,9 @@ authors = ["Franz Pletz"]
 language = "en"
 multilingual = false
 src = "src"
-title = "nixos-nspawn-ephemeral"
+title = "nixos-nspawn"
+
+[output.html]
+additional-css = ["custom.css"]
+git-repository-url = "https://github.com/fpletz/nixos-nspawn"
+edit-url-template = "https://github.com/fpletz/nixos-nspawn/edit/main/docs/{path}"

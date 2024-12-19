@@ -8,7 +8,7 @@ let
       # debugging in interactive driver
       environment.systemPackages = [ pkgs.tcpdump ];
       # use this test module in the containers recursively
-      virtualisation.nixos-nspawn-ephemeral.imports = [
+      nixos-nspawn.imports = [
         testModule
         inputs.self.nixosModules.host
       ];
@@ -26,7 +26,7 @@ in
               testModule
               inputs.self.nixosModules.host
             ];
-            virtualisation.nixos-nspawn-ephemeral.containers = {
+            nixos-nspawn.containers = {
               test.config = {
                 networking.hostName = "test-container";
               };
@@ -49,7 +49,7 @@ in
               testModule
               inputs.self.nixosModules.host
             ];
-            virtualisation.nixos-nspawn-ephemeral.containers = {
+            nixos-nspawn.containers = {
               test.path =
                 (inputs.nixpkgs.lib.nixosSystem {
                   inherit (pkgs) system;
@@ -81,7 +81,7 @@ in
               testModule
               inputs.self.nixosModules.host
             ];
-            virtualisation.nixos-nspawn-ephemeral.containers = {
+            nixos-nspawn.containers = {
               test = {
                 config = { };
                 network.veth.config = {
@@ -132,7 +132,7 @@ in
               recommendedProxySettings = true;
               virtualHosts."default".locations."/".proxyPass = "http://backend";
             };
-            virtualisation.nixos-nspawn-ephemeral.containers = {
+            nixos-nspawn.containers = {
               backend = {
                 config = {
                   networking.firewall.allowedTCPPorts = [ 80 ];

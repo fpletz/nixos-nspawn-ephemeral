@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.virtualisation.nixos-nspawn-ephemeral;
+  cfg = config.nixos-nspawn;
 
   containerVdevNetwork = {
     matchConfig = {
@@ -183,7 +183,7 @@ let
 in
 {
   options = {
-    virtualisation.nixos-nspawn-ephemeral = {
+    nixos-nspawn = {
       containers = lib.mkOption {
         type = lib.types.attrsOf containerModule;
         default = { };
@@ -258,7 +258,7 @@ in
           PrivateUsers = "pick";
           # Place the journal on the host to make it persistent
           LinkJournal = "try-host";
-          # NixOS takes care of the timezone
+          # NixOS config takes care of the timezone
           Timezone = "off";
         };
         filesConfig = {
@@ -283,7 +283,7 @@ in
 
     # We create this dummy image directory because systemd-nspawn fails otherwise.
     # Additionally, it persists the UID/GID mapping for user namespaces.
-    systemd.tmpfiles.settings."10-nixos-nspawn-ephemeral" = lib.mapAttrs' (
+    systemd.tmpfiles.settings."10-nixos-nspawn" = lib.mapAttrs' (
       name: _: lib.nameValuePair "/var/lib/machines/${name}" { d = { }; }
     ) cfg.containers;
 
