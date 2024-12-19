@@ -16,6 +16,15 @@ let
     }:
     {
       options = {
+        autoStart = lib.mkOption {
+          description = ''
+            Whether to start the container by default with machines.target.
+          '';
+          type = lib.types.bool;
+          default = true;
+          example = false;
+        };
+
         config = lib.mkOption {
           description = ''
             A specification of the desired configuration of this
@@ -247,9 +256,9 @@ in
     };
 
     # Activate the container units with machines.target
-    systemd.targets.machines.wants = lib.mapAttrsToList (
-      name: _: "systemd-nspawn@${name}.service"
-    ) cfg.containers;
+    systemd.targets.machines.wants = lib.mapAttrsToList (name: _: "systemd-nspawn@${name}.service") (
+      lib.filterAttrs (_n: c: c.autoStart) cfg.containers
+    );
 
     # XXX: This is basically a copy of upstream's systemd-nspawn@.service for experimentation
     # systemd.services = lib.flip lib.mapAttrs' cfg.containers (
